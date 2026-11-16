@@ -7,7 +7,7 @@ Source: branch `poc/railway-astrologer-20261115`. This is **not** a production d
 1. Create a **new isolated Railway project**, no shared variables.
 2. Set Python 3.12 in `RAILPACK_PYTHON_VERSION`.
 3. Require `PRIVATE_ASTROLOGER_API_SECRET_KEY` and `ASTROLOGER_DEBUG=false`. Never set `ASTROLOGER_ALLOW_NO_AUTH`.
-4. Build with Railpack using `pyproject.toml`, start with:
+4. Set Railway Build Command to `python -m pip install .` (the initial Railpack auto-detection did not install the pyproject dependencies). Start with:
    `sh -c 'libephemeris download leb2-base && exec uvicorn poc_app:app --host 0.0.0.0 --port "${PORT:-8000}"'`
 5. Use the **base tier only** for the proof of concept. Do not set `LIBEPHEMERIS_DATA_DIR` without a provisioner and verified `.initialized` marker; otherwise calculations are correctly blocked. Default unmanaged local mode requires verifying actual ephemeris inventory before trusting results.
 6. Only expose a domain to provide the PoC console. All calculation routes require `X-API-Key`. `/poc` is public but has no secrets or persistent state.
