@@ -1,0 +1,15 @@
+# Isolated Astrologer-API v6 Railway proof of concept.
+# The baseline branch v6 remains unchanged; no GIROO service is affected.
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+WORKDIR /opt/astrologer
+COPY . /opt/astrologer
+RUN python -m pip install --no-cache-dir .
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin astros \
+ && chown -R astros:astros /opt/astrologer
+USER astros
+ENV HOME=/home/astros
+# Download signed base coefficients during build, never at request time.
+RUN libephemeris download leb2-base --quiet
+EXPOSE 8000
+CMD ["sh","poc/start.sh"]
