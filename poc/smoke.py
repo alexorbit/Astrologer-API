@@ -87,6 +87,39 @@ def main():
         except Exception as exc:
             print("POC_SMOKE",name,"FAIL",type(exc).__name__,flush=True)
             failed+=1
-    print("POC_SMOKE SUMMARY",len(tests)+4-failed,"passed",failed,"failed",flush=True)
+    # Verify real server-to-server integration to GIROO preview using ONLY
+    # a fixed synthetic natal dataset, never reader data or a user token.
+    bridge_ok=False
+    bridge_url=(
+        "https://astros-api-cache-preview-temp-production.up.railway.app"
+        "/v1/public/apps/astros/natal-lab-smoke"
+    )
+    started=time.perf_counter()
+    try:
+        with urllib.request.urlopen(
+            urllib.request.Request(bridge_url,headers={"Accept":"application/json"}),
+            timeout=35,
+        ) as response:
+            output=json.loads(response.read(6000))
+            code=response.status
+        bridge_ok=(
+            code==200 and output.get("status")=="ok"
+            and output.get("houses_count")==12
+            and output.get("ascendant_present") is True
+            and output.get("planet_count",0)>=7
+            and "Astrologer-API" in output.get("source","")
+            and output.get("cache")=="disabled"
+        )
+        print("POC_SMOKE giroo_preview_bridge",
+            "PASS" if bridge_ok else "FAIL",
+            "http="+str(code),
+            "ms="+str(int((time.perf_counter()-started)*1000)),
+            "houses="+str(output.get("houses_count")),
+            "planets="+str(output.get("planet_count")),flush=True)
+    except Exception as exc:
+        print("POC_SMOKE giroo_preview_bridge FAIL",
+            type(exc).__name__,flush=True)
+    failed+=not bridge_ok
+    print("POC_SMOKE SUMMARY",len(tests)+5-failed,"passed",failed,"failed",flush=True)
     return int(failed>0)
 if __name__=="__main__":raise SystemExit(main())
