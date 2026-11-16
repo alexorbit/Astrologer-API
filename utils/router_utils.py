@@ -556,8 +556,12 @@ def render_chart(
 
     if split_chart:
         return {
-            "chart_wheel": drawer.generate_wheel_only_svg_string(minify=True),
-            "chart_grid": drawer.generate_aspect_grid_only_svg_string(minify=True),
+            "chart_wheel": drawer.generate_wheel_only_svg_string(
+                minify=True, remove_css_variables=True,
+            ),
+            "chart_grid": drawer.generate_aspect_grid_only_svg_string(
+                minify=True, remove_css_variables=True,
+            ),
         }
     return {"chart": drawer.generate_svg_string(minify=True)}
 
