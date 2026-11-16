@@ -35,6 +35,27 @@ async function probe(){
   }catch(e){node.className="status fail";node.textContent="Sem conexão · "+path;}
  }
 }
+async function displayChart(svg){
+ const img=$("chartImage"),pane=$("svgResult");
+ if(img.dataset.oldUrl){URL.revokeObjectURL(img.dataset.oldUrl);delete img.dataset.oldUrl;}
+ const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
+ pane.hidden=false;
+ const rendered=await new Promise(resolve=>{
+  let settled=false;
+  const timer=setTimeout(()=>finish(false),7000);
+  const finish=ok=>{
+   if(settled)return;
+   settled=true;clearTimeout(timer);img.onload=null;img.onerror=null;
+   resolve(ok);
+  };
+  img.onload=()=>finish(img.naturalWidth>0&&img.naturalHeight>0);
+  img.onerror=()=>finish(false);
+  img.src=url;
+ });
+ if(rendered){img.dataset.oldUrl=url;return true;}
+ img.removeAttribute("src");pane.hidden=true;URL.revokeObjectURL(url);
+ return false;
+}
 async function run(name){
  if(name!=="auth"&&!key.value.trim()){record(name,null,false,"Informe a chave X-API-Key da instância.");return false}
  try{
@@ -55,12 +76,11 @@ async function run(name){
   }else{
    summary="HTTP "+r.status+": "+String(r.output?.error_type||r.output?.message||"Formato inesperado").slice(0,200);
   }
-  record(name,r,ok,summary);
   if(ok&&name==="chart"){
-   const blob=new Blob([r.output.chart],{type:"image/svg+xml"});
-   const url=URL.createObjectURL(blob);const img=$("chartImage");if(img.dataset.oldUrl)URL.revokeObjectURL(img.dataset.oldUrl);
-   img.src=url;img.dataset.oldUrl=url;$("svgResult").hidden=false;
+   ok=await displayChart(r.output.chart);
+   summary=ok?"Roda SVG calculada e renderizada no navegador.":"SVG recebido da API, mas a imagem não carregou no navegador. Verifique a política CSP e o console.";
   }
+  record(name,r,ok,summary);
   return ok;
  }catch(e){record(name,null,false,String(e.message||e).slice(0,180));return false}
 }
@@ -72,5 +92,9 @@ async function exclusive(fn){
 for(const b of document.querySelectorAll("button[data-test]"))b.addEventListener("click",()=>exclusive(()=>run(b.dataset.test)));
 $("runAll").addEventListener("click",()=>exclusive(async()=>{for(const n of ["auth","natal","chart","moon","calendar","transits"])await run(n)}));
 $("probe").addEventListener("click",probe);
-$("clear").addEventListener("click",()=>{list.replaceChildren();raw.textContent="Nenhuma resposta.";runStatus.textContent="Nenhum teste executado."});
+$("clear").addEventListener("click",()=>{
+ list.replaceChildren();raw.textContent="Nenhuma resposta.";runStatus.textContent="Nenhum teste executado.";
+ const img=$("chartImage");if(img.dataset.oldUrl){URL.revokeObjectURL(img.dataset.oldUrl);delete img.dataset.oldUrl;}
+ img.removeAttribute("src");$("svgResult").hidden=true;
+});
 probe();

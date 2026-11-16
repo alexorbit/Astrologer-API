@@ -23,7 +23,7 @@ async def app(scope, receive, send):
                 _ROOT / filename, media_type=mime,
                 headers={
                     "Cache-Control": "no-store",
-                    "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+                    "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
                     "X-Content-Type-Options": "nosniff",
                     "Referrer-Policy": "no-referrer",
                     "X-Frame-Options": "DENY"

@@ -31,3 +31,7 @@ The GIROO portal and API are NOT connected to this project. No production config
 ### Configuração efetiva do serviço
 
 O Railway usa `builder=DOCKERFILE` e `dockerfilePath=Dockerfile.poc` no laboratório. Configurar antes de iniciar a build; alterações posteriores só entram no deploy seguinte.
+
+## Correção da roda no navegador
+
+A primeira bateria validava apenas que a API devolvia um SVG, não que o navegador conseguia mostrá-lo. O painel usava URL `blob:`, porém o cabeçalho CSP `img-src 'self' data:` bloqueava esse recurso. Na revisão, o CSP permite somente `blob:` adicional **para imagens**; scripts continuam restritos a `'self'`. O teste em JS agora exige `img.onload` com dimensões válidas antes de marcar a roda como APROVADA. O smoke testa a presença da diretiva CSP e do tratamento de carregamento no JavaScript. Nenhuma alteração nas APIs de cálculo.

@@ -36,7 +36,9 @@ def asset(path, marker):
     started=time.perf_counter()
     with urllib.request.urlopen(r,timeout=20) as response:
         content=response.read(350000).decode("utf-8")
-        result=(response.status, marker in content, int((time.perf_counter()-started)*1000))
+        csp=response.headers.get("Content-Security-Policy","")
+        csp_ok=(path!="/poc") or ("img-src 'self' data: blob:" in csp)
+        result=(response.status, marker in content and csp_ok, int((time.perf_counter()-started)*1000))
     return result
 
 def main():
@@ -57,7 +59,7 @@ def main():
     for label,path,marker in [
         ("ui_html","/poc","LABORATÓRIO DE CÁLCULOS"),
         ("ui_css","/poc/app.css",".test-grid"),
-        ("ui_js","/poc/app.js","runAll")]:
+        ("ui_js","/poc/app.js","naturalWidth")]:
         try:
             code,valid,ms=asset(path,marker)
             ok=code==200 and valid
