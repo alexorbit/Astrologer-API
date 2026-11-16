@@ -5,8 +5,15 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /opt/astrologer
 COPY . /opt/astrologer
 RUN python -m pip install --no-cache-dir .
-RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin astros \
- && chown -R astros:astros /opt/astrologer
+# The upstream repo has a top-level 'mcp/' folder, which shadows the installed
+# Model Context Protocol SDK when Python is executed from the repo root.
+# Run the test wrapper from a small directory containing NO top-level 'mcp'.
+RUN mkdir -p /opt/poc-runner \
+ && cp poc_app.py /opt/poc-runner/poc_app.py \
+ && cp -r poc /opt/poc-runner/poc \
+ && useradd --create-home --uid 10001 --shell /usr/sbin/nologin astros \
+ && chown -R astros:astros /opt/astrologer /opt/poc-runner
+WORKDIR /opt/poc-runner
 USER astros
 ENV HOME=/home/astros
 # Download signed base coefficients during build, never at request time.
