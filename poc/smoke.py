@@ -31,6 +31,14 @@ def log(name,result,expected=200,check=None):
         print("  error_type=",data.get("error_type",""),"message=",str(data.get("message",""))[:120],flush=True)
     return ok
 
+def asset(path, marker):
+    r=urllib.request.Request(BASE+path,method="GET")
+    started=time.perf_counter()
+    with urllib.request.urlopen(r,timeout=20) as response:
+        content=response.read(350000).decode("utf-8")
+        result=(response.status, marker in content, int((time.perf_counter()-started)*1000))
+    return result
+
 def main():
     failed=0
     # GET /ready must report the actual library status, not merely HTTP liveness.
@@ -46,6 +54,18 @@ def main():
         failed+=not log("health",req("/health"))
     except Exception as exc:
         print("POC_SMOKE health FAIL",type(exc).__name__,flush=True);return 1
+    for label,path,marker in [
+        ("ui_html","/poc","LABORATÓRIO DE CÁLCULOS"),
+        ("ui_css","/poc/app.css",".test-grid"),
+        ("ui_js","/poc/app.js","runAll")]:
+        try:
+            code,valid,ms=asset(path,marker)
+            ok=code==200 and valid
+            print("POC_SMOKE",label,"PASS" if ok else "FAIL","http="+str(code),"ms="+str(ms),flush=True)
+            failed+=not ok
+        except Exception as exc:
+            print("POC_SMOKE",label,"FAIL",type(exc).__name__,flush=True)
+            failed+=1
     if not ready:
         print("POC_SMOKE readiness FAIL: engine not ready, calculations not attempted",flush=True)
         return 1
@@ -54,6 +74,7 @@ def main():
     tests=[
       ("auth_reject", "/api/v6/chart-data/birth-chart", {"subject":SUBJECT}, 403, False, None),
       ("natal", "/api/v6/chart-data/birth-chart", {"subject":SUBJECT}, 200, True, lambda d:bool(d.get("chart_data"))),
+      ("invalid_coordinates", "/api/v6/chart-data/birth-chart", {"subject":{**SUBJECT,"latitude":125}}, 422, True, lambda d:bool(d.get("detail") or d.get("message") or d.get("status")=="ERROR")),
       ("svg", "/api/v6/chart/birth-chart", {"subject":SUBJECT}, 200, True, lambda d:isinstance(d.get("chart"),str) and "<svg" in d["chart"]),
       ("moon", "/api/v6/moon-phase", {"year":2026,"month":11,"day":16,"hour":12,"minute":0,"latitude":-23.5505,"longitude":-46.6333,"timezone":"America/Sao_Paulo"}, 200, True, lambda d:bool(d.get("moon_phase_overview"))),
       ("week", "/api/v6/calendar", {"start_date":"2026-11-16","end_date":"2026-11-22","include_sun_times":False,"include_planetary_hours":False,"include_eclipses":False,"include_voc":False,"include_aspectarian":False,"include_sign_periods":False,"include_retrograde_periods":False}, 200, True, lambda d:isinstance(d.get("ingresses"),list)),
@@ -64,6 +85,6 @@ def main():
         except Exception as exc:
             print("POC_SMOKE",name,"FAIL",type(exc).__name__,flush=True)
             failed+=1
-    print("POC_SMOKE SUMMARY",len(tests)+1-failed,"passed",failed,"failed",flush=True)
+    print("POC_SMOKE SUMMARY",len(tests)+4-failed,"passed",failed,"failed",flush=True)
     return int(failed>0)
 if __name__=="__main__":raise SystemExit(main())
