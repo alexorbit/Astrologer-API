@@ -27,3 +27,7 @@ The browser console at `/poc` offers the same tests interactively, with JSON res
 ## Invariants
 
 The GIROO portal and API are NOT connected to this project. No production configuration or databases modified. This is an experimental AGPL-3.0 proof of concept. The LEB2-base data coverage and the historical timezone policy must be checked before trusting predictions and before commercial use.
+
+### Configuração efetiva do serviço
+
+O Railway usa `builder=DOCKERFILE` e `dockerfilePath=Dockerfile.poc` no laboratório. Configurar antes de iniciar a build; alterações posteriores só entram no deploy seguinte.
